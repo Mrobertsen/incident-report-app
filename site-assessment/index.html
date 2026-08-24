@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>AFRRCS Site Assessment</title>
+<style>
+  :root{
+    --navy:#0F3D3D;
+    --blue:#1B6E6A;
+    --blue-mid:#2E938C;
+    --blue-light:#E4F3F1;
+    --bg:#F4F7F6;
+    --surface:#FFFFFF;
+    --text:#1B2733;
+    --muted:#5B6B7A;
+    --border:#D8E3E1;
+    --good:#2E7D32;
+    --warn:#B45309;
+    --bad:#B3261E;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;}
+  body{min-height:100vh;display:flex;flex-direction:column;}
+  #app{max-width:520px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+  header.topbar{background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;
+    position:sticky;top:0;z-index:20;}
+  header.topbar .checklist-icon{display:flex;align-items:center;color:#6FCFC7;flex-shrink:0;}
+  header.topbar h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.2px;flex:1;}
+  header.topbar .back{background:none;border:none;color:#fff;font-size:20px;padding:4px 8px;cursor:pointer;}
+
+  main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
+  .hidden{display:none !important;}
+
+  /* ---- Home screen ---- */
+  .home-hero{background:linear-gradient(135deg,var(--blue) 0%,var(--navy) 100%);color:#fff;border-radius:var(--radius);
+    padding:20px;margin-bottom:18px;}
+  .home-hero h2{margin:0 0 6px;font-size:20px;}
+  .home-hero p{margin:0;font-size:13px;color:#CBEAE5;line-height:1.4;}
+  .btn{display:block;width:100%;border:none;border-radius:10px;padding:15px 16px;font-size:16px;font-weight:600;
+    cursor:pointer;text-align:center;}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:active{background:var(--navy);}
+  .btn-secondary{background:var(--surface);color:var(--blue);border:1.5px solid var(--blue);}
+  .btn-ghost{background:none;color:var(--muted);border:1px solid var(--border);}
+  .btn-danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad);}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{flex:1;}
+
+  .section-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+    margin:22px 0 8px;}
+  .draft-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+  .draft-card .row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .draft-card .site{font-weight:700;font-size:15px;}
+  .draft-card .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+  .badge-draft{background:#FFF1CC;color:#8A5A00;}
+  .badge-done{background:#DFF3E1;color:var(--good);}
+  .draft-card .actions{margin-top:10px;display:flex;gap:8px;}
+  .draft-card .actions button{flex:1;font-size:13px;padding:9px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);cursor:pointer;}
+  .empty-note{color:var(--muted);font-size:13px;text-align:center;padding:24px 8px;}
+
+  /* ---- Wizard ---- */
+  .progress-wrap{padding:10px 16px 0;background:var(--navy);}
+  .progress-bars{display:flex;gap:3px;padding-bottom:10px;}
+  .progress-bars .seg{flex:1;height:5px;border-radius:3px;background:#1E5654;}
+  .progress-bars .seg.done{background:#6FCFC7;}
+  .progress-bars .seg.current{background:#fff;}
+  .progress-label{color:#BFE8E2;font-size:11px;padding-bottom:8px;}
+
+  .card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);}
+  .card h2{font-size:16px;margin:0 0 4px;}
+  .card .sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text);}
+  .field .hint{font-size:11px;color:var(--muted);margin-top:4px;}
+  input[type=text],input[type=number],input[type=date],textarea{
+    width:100%;border:1.5px solid var(--border);border-radius:8px;padding:12px;font-size:15px;
+    font-family:inherit;background:#fff;color:var(--text);}
+  textarea{min-height:80px;resize:vertical;}
+  input:focus,textarea:focus{outline:2px solid var(--blue-mid);border-color:var(--blue-mid);}
+
+  .choice-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .choice-btn{flex:1 1 auto;min-width:80px;padding:11px 10px;border-radius:8px;border:1.5px solid var(--border);
+    background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-align:center;}
+  .choice-btn.sel{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .choice-btn.sel.yes{background:var(--good);border-color:var(--good);}
+  .choice-btn.sel.no{background:var(--bad);border-color:var(--bad);}
+
+  .site-search input{margin-bottom:6px;}
+  .site-results{max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;}
+  .site-result{padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;}
+  .site-result:last-child{border-bottom:none;}
+  .site-result:active{background:var(--blue-light);}
+  .site-selected{display:flex;align-items:center;justify-content:space-between;background:var(--blue-light);
+    border:1.5px solid var(--blue-mid);border-radius:8px;padding:12px;}
+  .site-selected .name{font-weight:700;color:var(--blue);}
+  .site-selected button{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;}
+
+  .gps-row{display:flex;gap:8px;margin-bottom:8px;}
+  .gps-row input{flex:1;}
+  .gps-btn{background:var(--blue-light);border:1.5px solid var(--blue-mid);color:var(--blue);border-radius:8px;
+    padding:0 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .gps-status{font-size:12px;color:var(--muted);min-height:16px;}
+
+
+
+  .review-group{margin-bottom:14px;}
+  .review-group h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 6px;}
+  .review-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);}
+  .review-row .k{color:var(--muted);}
+  .review-row .v{font-weight:600;text-align:right;}
+
+  footer.navbar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:20;}
+  footer.navbar .wrap{max-width:520px;margin:0 auto;display:flex;gap:10px;}
+  footer.navbar button{flex:1;padding:14px;border-radius:10px;font-size:15px;font-weight:700;border:none;cursor:pointer;}
+  footer.navbar .nav-back{background:var(--bg);color:var(--text);border:1px solid var(--border);}
+  footer.navbar .nav-next{background:var(--blue);color:#fff;}
+  footer.navbar .nav-finish{background:var(--good);color:#fff;}
+
+  .toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;
+    padding:10px 18px;border-radius:8px;font-size:13px;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.2);}
+
+  .done-wrap{text-align:center;padding:40px 20px;}
+  .done-wrap .check{width:64px;height:64px;border-radius:50%;background:var(--good);color:#fff;font-size:32px;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .done-wrap h2{margin:0 0 8px;}
+  .done-wrap p{color:var(--muted);font-size:14px;margin-bottom:24px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <button class="back hidden" id="btnBack">&#8249;</button>
+    <div class="checklist-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+        <path d="M9 3v2h6V3"></path>
+        <path d="M8 11l2 2 4-4"></path>
+        <path d="M8 17h6"></path>
+      </svg>
+    </div>
+    <h1 id="topTitle">AFRRCS Site Assessment</h1>
+  </header>
+
+  <div class="progress-wrap hidden" id="progressWrap">
+    <div class="progress-bars" id="progressBars"></div>
+    <div class="progress-label" id="progressLabel"></div>
+  </div>
+
+  <main id="main"></main>
+
+  <footer class="navbar hidden" id="navbar">
+    <div class="wrap">
+      <button class="nav-back" id="navBackBtn">Back</button>
+      <button class="nav-next" id="navNextBtn">Next</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   Data schema — every key below matches a column header on the
+   "Site Assessments" tab of AFRRCS_Site_Assessment_Master_Checklist.xlsx
+   exactly, so files exported here drop straight into that sheet.
+   ============================================================ */
+const SITES = [{"id":1,"name":"Elkwater","lease":"Colo","lat":49.65264,"lon":-110.27125,"legal":"NW 18-8-2 W4"},{"id":2,"name":"Manyberries","lease":"Colo","lat":49.50661,"lon":-110.676889,"legal":"NW 30-6-5 W4"},{"id":3,"name":"Medicine Hat 1","lease":"ColoColo","lat":50.04578,"lon":-110.621972,"legal":"NE 33-12-5 W4"},{"id":4,"name":"Redcliff","lease":"ColoColo","lat":50.16206,"lon":-110.957278,"legal":"NW 7-14-7 W4"},{"id":5,"name":"Bow Island","lease":"Colo","lat":49.87827,"lon":-111.231461,"legal":"SW 06-11-09 W4"},{"id":6,"name":"Schuler 1","lease":"Colo","lat":50.29425,"lon":-110.21,"legal":"NW 27-15-02 W4"},{"id":7,"name":"Mcneil","lease":"Colo","lat":50.67366,"lon":-110.095619,"legal":"NW 4-20-1 W4"},{"id":8,"name":"Iddesleigh","lease":"Colo","lat":50.66652,"lon":-111.29285,"legal":"SW-2-20-10 W4M"},{"id":9,"name":"Outer Rainy Hill","lease":"Colo","lat":50.46194,"lon":-111.2875,"legal":"SE 27-17-10 W4"},{"id":10,"name":"Wild Horse","lease":"AFRRCS","lat":48.99982,"lon":-110.216836,"legal":"NE 4-1-2 W4"},{"id":11,"name":"Walsh","lease":"Colo","lat":49.94436,"lon":-110.063278,"legal":"NW 27-11-01 W4"},{"id":13,"name":"Foremost","lease":"Colo","lat":49.45958,"lon":-111.369917,"legal":"NW 12-6-11 W4"},{"id":18,"name":"Milk River","lease":"AFRRCS","lat":49.24453,"lon":-112.393528,"legal":"NE 29-3-18 W4"},{"id":19,"name":"Lethbridge 1","lease":"AFRRCS","lat":49.757,"lon":-112.791194,"legal":"SW 28-9-21 W4"},{"id":20,"name":"Retlaw","lease":"AFRRCS","lat":49.99031,"lon":-112.335661,"legal":"SE 13-12-18 W4"},{"id":21,"name":"Brooks","lease":"Colo","lat":50.5225,"lon":-111.9028,"legal":"NW 17-18-14 W4"},{"id":22,"name":"Nobleford","lease":"Colo","lat":49.84456,"lon":-113.127972,"legal":"SE 25-10-24 W4"},{"id":23,"name":"Coutts","lease":"ColoColo","lat":49.07622,"lon":-112.029917,"legal":"SW 36-1-16 W4"},{"id":24,"name":"Lethbridge City","lease":"ColoColo","lat":49.70336,"lon":-112.840611,"legal":"SW 6-9-21 W4"},{"id":26,"name":"Duchess Hill","lease":"Colo","lat":50.77997,"lon":-111.9392,"legal":"SW 18-21-14 W4M"},{"id":28,"name":"Grassy Lake","lease":"Colo","lat":49.79742,"lon":-111.674333,"legal":"NW 2-10-13 W4"},{"id":29,"name":"Bassano","lease":"Colo","lat":50.76413,"lon":-112.406917,"legal":"SE 10-21-18 W4"},{"id":31,"name":"Monarch","lease":"Colo","lat":49.8005,"lon":-113.096278,"legal":"SE 7-10-23 W4M"},{"id":32,"name":"Taber","lease":"Colo","lat":49.78478,"lon":-112.102778,"legal":"NW 34-9-16-W4"},{"id":36,"name":"Burmis","lease":"AFRRCS","lat":49.55375,"lon":-114.178167,"legal":"SW 14-7-2 W5"},{"id":37,"name":"Beauvais Lake","lease":"Colo","lat":49.36892,"lon":-114.051361,"legal":"SE 10-5-1 W5"},{"id":38,"name":"Leavitt","lease":"Colo","lat":49.17519,"lon":-113.405222,"legal":"SW 2-3-26 W4"},{"id":39,"name":"Magrath","lease":"Colo","lat":49.3915,"lon":-112.963611,"legal":"NW 18-05-22 W4"},{"id":40,"name":"Claresholm","lease":"Colo","lat":50.04787,"lon":-113.55905,"legal":"NE 36-12-27-W4M"},{"id":41,"name":"Fort Macleod","lease":"Colo","lat":49.73453,"lon":-113.432583,"legal":"SW 14-9-26 W4"},{"id":42,"name":"Waterton Park","lease":"Colo","lat":49.07111,"lon":-113.89806,"legal":"NE 26-1-30 W4"},{"id":43,"name":"Hill Spring","lease":"Colo","lat":49.29211,"lon":-113.622889,"legal":"SW 18-4-27 W4"},{"id":44,"name":"Nanton","lease":"Colo","lat":50.34199,"lon":-113.781039,"legal":"SW 15-16-28 W4"},{"id":45,"name":"Pincher Creek","lease":"Colo","lat":49.49669,"lon":-113.8325,"legal":"SW 27-6-30 W4"},{"id":46,"name":"Stand Off","lease":"Colo","lat":49.47536,"lon":-113.317,"legal":"NW 16-6-25 W4"},{"id":47,"name":"Brocket","lease":"AFRRCS","lat":49.54881,"lon":-113.808194,"legal":"NE 12-07-29 W4"},{"id":48,"name":"Cardston","lease":"Colo","lat":49.18108,"lon":-113.298167,"legal":"SE 04-03-25 W4"},{"id":49,"name":"Buffalo","lease":"AFRRCS","lat":51.031,"lon":-110.607481,"legal":"NW 11-24-5 W4"},{"id":50,"name":"Youngstown","lease":"Colo","lat":51.38283,"lon":-111.250361,"legal":"NE 7-28-9 W4"},{"id":51,"name":"Pollockville","lease":"Colo","lat":51.09507,"lon":-111.424631,"legal":"NE 35-24-11 W4"},{"id":52,"name":"Nose Hill","lease":"ColoColo","lat":52.15589,"lon":-111.134861,"legal":"NE 6-37-8 W4"},{"id":53,"name":"Sheerness","lease":"AFRRCS","lat":51.52944,"lon":-111.785419,"legal":"NW 33-29-13 W4"},{"id":54,"name":"Acadia Valley","lease":"ColoColo","lat":51.15853,"lon":-110.208056,"legal":"SW 27-25-2 W4"},{"id":55,"name":"Altario","lease":"Colo","lat":51.90975,"lon":-110.218592,"legal":"NE 09-34-02 W4"},{"id":56,"name":"Empress","lease":"ColoColo","lat":50.955,"lon":-110.0097,"legal":"SE 13-23-1 W4"},{"id":59,"name":"Neutral Hills","lease":"Colo","lat":52.06219,"lon":-110.5751,"legal":"SW 6-36-4 W4"},{"id":60,"name":"New Brigden","lease":"Colo","lat":51.76974,"lon":-110.475331,"legal":"SW 26-32-4 W4"},{"id":62,"name":"Oyen","lease":"Colo","lat":51.4247,"lon":-110.476261,"legal":"NE 27-28-4 W4"},{"id":63,"name":"Cessford","lease":"ColoColo","lat":51.00827,"lon":-111.563808,"legal":"NW 36-23-12 W4"},{"id":65,"name":"Drumheller 2","lease":"AFRRCS","lat":51.61397,"lon":-112.327972,"legal":"NE 33-30-17 W4"},{"id":66,"name":"Morrin 1","lease":"Colo","lat":51.67864,"lon":-112.8175,"legal":"SE 30-31-20-31-W4"},{"id":67,"name":"Rockyford","lease":"Colo","lat":51.18295,"lon":-113.027358,"legal":"NW 33-25-22-W4M"},{"id":68,"name":"Wintering Hill","lease":"AFRRCS","lat":51.1828,"lon":-112.5448,"legal":"NE 35-25-19 W4"},{"id":69,"name":"Cluny","lease":"Colo","lat":50.85818,"lon":-112.865467,"legal":"NW 09-22-21-W4M"},{"id":70,"name":"Lomond 1","lease":"Colo","lat":50.37387,"lon":-112.68365,"legal":"SW 27-16-20 W4"},{"id":71,"name":"Strathmore","lease":"Colo","lat":51.03523,"lon":-113.425783,"legal":"NE 09-24-25-W4M"},{"id":72,"name":"Trochu 1","lease":"AFRRCS","lat":51.80947,"lon":-113.288989,"legal":"NE 3-33-24 W4"},{"id":73,"name":"Beiseker","lease":"Colo","lat":51.40661,"lon":-113.257944,"legal":"SW 24-28-24 W4"},{"id":74,"name":"Vulcan 1","lease":"Colo","lat":50.38241,"lon":-113.36827,"legal":"NW 27-16-25 W4M"},{"id":75,"name":"Buffalo Hills","lease":"Colo","lat":50.60772,"lon":-113.145789,"legal":"SE 17-19-23 W4"},{"id":77,"name":"Drumheller 1","lease":"Colo","lat":51.46444,"lon":-112.711861,"legal":"SE 11-29-20 W4"},{"id":78,"name":"Arrowwood","lease":"ColoColo","lat":50.73807,"lon":-113.151619,"legal":"SE 32-20-23 W4"},{"id":79,"name":"Linden","lease":"AFRRCS","lat":51.59024,"lon":-113.487953,"legal":"NE 20-30-25 W4"},{"id":85,"name":"Three Hills","lease":"ColoColo","lat":51.70765,"lon":-113.259531,"legal":"SW 6-32-23 W4"},{"id":88,"name":"Champion","lease":"AFRRCS","lat":50.24846,"lon":-113.143825,"legal":"NE 7-15-23 W4"},{"id":89,"name":"Drumheller 3","lease":"AFRRCS","lat":51.34561,"lon":-112.485361,"legal":"SW 33-27-18 W4"},{"id":90,"name":"Aldersyde","lease":"AFRRCS","lat":50.66702,"lon":-113.97585,"legal":"NE 5-20-29 W4"},{"id":91,"name":"Southland Plaza","lease":"ColoColo","lat":50.96393,"lon":-114.073217,"legal":"10281 Southport Rd SW"},{"id":92,"name":"Cochrane","lease":"Colo","lat":51.19733,"lon":-114.456389,"legal":"NW 2-26-4 W5"},{"id":93,"name":"Crossfield","lease":"AFRRCS","lat":51.38583,"lon":-113.80056,"legal":"NE 7-28-27  W4"},{"id":94,"name":"Cremona","lease":"Colo","lat":51.52662,"lon":-114.4951,"legal":"NE 33-29-04 W5"},{"id":95,"name":"Radnor","lease":"ColoColo","lat":51.283115,"lon":-114.688356,"legal":"NW 7-27-5 W5M"},{"id":96,"name":"Bankers Hall West","lease":"ColoColo","lat":51.04537,"lon":-114.069081,"legal":"855 2nd Street SW"},{"id":97,"name":"Chestermere","lease":"Colo","lat":51.04992,"lon":-113.805083,"legal":"NE 14-24-28  W4"},{"id":98,"name":"Spy Hill","lease":"Colo","lat":51.15439,"lon":-114.185519,"legal":"112 Ave. NW, 69 St. NW"},{"id":99,"name":"Eagle Hill","lease":"Colo","lat":51.82341,"lon":-114.46545,"legal":"NW 11-33-4 W5"},{"id":100,"name":"Springbank","lease":"ColoColo","lat":51.065,"lon":-114.214444,"legal":"7 Ave 85 St SW Calgary"},{"id":101,"name":"Forest Lawn","lease":"ColoColo","lat":51.04922,"lon":-113.995864,"legal":"24th Ave SE 27 st SE"},{"id":102,"name":"Calgary Airport","lease":"Colo","lat":51.13211,"lon":-114.01035,"legal":"Calgary Airport"},{"id":106,"name":"Didsbury","lease":"ColoColo","lat":51.63556,"lon":-114.108056,"legal":"SW 8-31-1 W5"},{"id":107,"name":"Eden Valley","lease":"AFRRCS","lat":50.43611,"lon":-114.447528,"legal":"NE 14-17-4 W5"},{"id":108,"name":"High River","lease":"Colo","lat":50.58128,"lon":-113.850981,"legal":"NW 5-19-28 W4"},{"id":109,"name":"Longview","lease":"Colo","lat":50.5445,"lon":-114.217278,"legal":"SE 28 18 2 W5"},{"id":110,"name":"Airdrie","lease":"Colo","lat":51.29269,"lon":-113.98695,"legal":"NW 11-27-29 W4"},{"id":111,"name":"Millarville","lease":"Colo","lat":50.75953,"lon":-114.327919,"legal":"NE 3-21-3 W5"},{"id":113,"name":"Olds Wireless","lease":"ColoColo","lat":51.81608,"lon":-114.118278,"legal":"SW 8-33-1 W5"},{"id":115,"name":"Sundre","lease":"Colo","lat":51.7975,"lon":-114.642222,"legal":"SE 04-33-05 W4"},{"id":116,"name":"Turner Valley","lease":"Colo","lat":50.67318,"lon":-114.275419,"legal":"NW-6-20-2-W5"},{"id":117,"name":"Carstairs","lease":"Colo","lat":51.56381,"lon":-114.073472,"legal":"SE 16-30-1 W5"},{"id":118,"name":"Hayter Hills","lease":"AFRRCS","lat":52.36917,"lon":-110.1715,"legal":"NW 24-39-2 W4"},{"id":119,"name":"Lowden Lake","lease":"AFRRCS","lat":52.19339,"lon":-112.674383,"legal":"SE 20-37-19 W4"},{"id":120,"name":"Heisler 1","lease":"AFRRCS","lat":52.69344,"lon":-112.179944,"legal":"NW 7-43-15 W4"},{"id":121,"name":"Wainwright 1","lease":"Colo","lat":52.8671,"lon":-110.8428,"legal":"NW 8-45-6 W4"},{"id":122,"name":"Jarrow","lease":"AFRRCS","lat":53.01785,"lon":-111.212583,"legal":"SW 2-47-9 W4"},{"id":123,"name":"Lougheed","lease":"AFRRCS","lat":52.536992,"lon":-111.518644,"legal":"SE 21-41-11 W4"},{"id":124,"name":"Chain Lakes","lease":"Colo","lat":51.88099,"lon":-112.124992,"legal":"NW 31-33-15 W4"},{"id":125,"name":"Edgerton","lease":"Colo","lat":52.60786,"lon":-110.556361,"legal":"NW 8-42-4 W4"},{"id":126,"name":"Gadsby","lease":null,"lat":52.2975,"lon":-112.357861,"legal":"SE 27-38-17 W4"},{"id":127,"name":"Hardisty","lease":"ColoColo","lat":52.67263,"lon":-111.308461,"legal":"SW 6-43-9 W4"},{"id":132,"name":"Stettler","lease":"Colo","lat":52.33316,"lon":-112.714131,"legal":"SW 8-39-19 W4"},{"id":133,"name":"Big Valley","lease":"Colo","lat":52.06066,"lon":-112.745489,"legal":"SE 2-36-20 W4"},{"id":134,"name":"Tsuut'ina","lease":"ColoColo","lat":50.932639,"lon":-114.420417,"legal":"SE 1-23-4 W5"},{"id":135,"name":"Castor","lease":"Colo","lat":52.21502,"lon":-111.944211,"legal":"NE 28-37-14 W4"},{"id":136,"name":"Chauvin","lease":"ColoColo","lat":52.69423,"lon":-110.142514,"legal":"NW 7-43-1 W4"},{"id":137,"name":"Red Deer","lease":"Colo","lat":52.28489,"lon":-113.823861,"legal":"NE 20-38-27 W4"},{"id":138,"name":"Innisfail","lease":"Colo","lat":52.06364,"lon":-113.891139,"legal":"NE 2-36-28 W4"},{"id":139,"name":"Gilby","lease":"AFRRCS","lat":52.49908,"lon":-114.324417,"legal":"SE 02-41-3 W5"},{"id":140,"name":"Ponoka 1","lease":"AFRRCS","lat":52.66708,"lon":-113.299889,"legal":"NE 31-42-23 W4"},{"id":141,"name":"Bear Hills","lease":"Colo","lat":52.84247,"lon":-113.548639,"legal":"NW 34-44-25 W4"},{"id":142,"name":"Poplar Ridge","lease":"ColoColo","lat":52.3139,"lon":-113.9589,"legal":"NE 32-38-28 W4"},{"id":143,"name":"Hillsdown","lease":"Colo","lat":52.23616,"lon":-113.648742,"legal":"SE 4-38-26 W4"},{"id":144,"name":"Clive","lease":"Colo","lat":52.46976,"lon":-113.436944,"legal":"SE 30-40-24 W4M"},{"id":145,"name":"College Heights","lease":"Colo","lat":52.4933,"lon":-113.738278,"legal":"SW 06-41-26-W4M"},{"id":146,"name":"Crestomere","lease":"Colo","lat":52.70458,"lon":-113.943547,"legal":"SW 13-43-28 W4"},{"id":147,"name":"Delburne","lease":"Colo","lat":52.18572,"lon":-113.180797,"legal":"NE 14-37-23 W4"},{"id":148,"name":"Elnora","lease":"Colo","lat":52.05116,"lon":-113.244689,"legal":"NE 32-35-23 W4"},{"id":151,"name":"Ponoka","lease":"ColoColo","lat":52.67636,"lon":-113.579611,"legal":"NW 4-43-25 W4"},{"id":152,"name":"Bentley","lease":"Colo","lat":52.46439,"lon":-114.035972,"legal":"NE 23-40-1 W5"},{"id":154,"name":"Bluffton","lease":"Colo","lat":52.781352,"lon":-114.218,"legal":"NW 10-44-2 W5"},{"id":155,"name":"Alix","lease":"ColoColo","lat":52.38167,"lon":-113.146444,"legal":"SW 29-39-22 W4"},{"id":156,"name":"Sunchild","lease":"AFRRCS","lat":52.52186,"lon":-115.323861,"legal":"NE 11-41-10 W5"},{"id":157,"name":"Blue Hills","lease":"ColoColo","lat":51.70467,"lon":-115.224417,"legal":"NW 33-31-9 W5"},{"id":158,"name":"Marble Mtn","lease":"Colo","lat":51.90989,"lon":-115.205417,"legal":"NW 10-34-9 W5"},{"id":159,"name":"Rocky","lease":"Colo","lat":52.52004,"lon":-114.877981,"legal":"NW 12-41-7 W5"},{"id":160,"name":"Limestone","lease":"ColoColo","lat":51.93517,"lon":-115.429861,"legal":"NE 24-34-11 W5"},{"id":161,"name":"Baseline","lease":"ColoColo","lat":52.130583,"lon":-115.429083,"legal":"SW 31-36-10 W5"},{"id":162,"name":"Blackstone","lease":"ColoColo","lat":52.77414,"lon":-116.331139,"legal":"SE 12-44-17 W5"},{"id":163,"name":"Chungo","lease":"ColoColo","lat":52.68431,"lon":-116.696722,"legal":"SE 9-43-19 W5"},{"id":164,"name":"Falls","lease":"ColoColo","lat":52.09967,"lon":-115.964056,"legal":"NE 17-36-14 W5"},{"id":165,"name":"Jackfish Lake","lease":"ColoColo","lat":52.49575,"lon":-115.531333,"legal":"SW 4-41-11 W5"},{"id":166,"name":"Job Lake","lease":"ColoColo","lat":52.351389,"lon":-116.828417,"legal":"SE 16-39-20 W5"},{"id":167,"name":"Rocky Mt. House","lease":"ColoColo","lat":52.33986,"lon":-114.914944,"legal":"SE 10-39-7 W5"},{"id":168,"name":"Shunda Mountain","lease":"ColoColo","lat":52.53133,"lon":-116.125389,"legal":"NW 17-41-15 W5"},{"id":169,"name":"Caroline","lease":"Colo","lat":52.09997,"lon":-115.041222,"legal":"NW 14-36-8 W5"},{"id":170,"name":"Meeting Creek","lease":"Colo","lat":52.72506,"lon":-112.7223,"legal":"NE-20-43-19 W4"},{"id":171,"name":"Bonlea","lease":"AFRRCS","lat":52.93161,"lon":-111.853556,"legal":"SE 05-46-13 W4M"},{"id":172,"name":"Mannville","lease":"Colo","lat":53.4374,"lon":-111.1825,"legal":"NE 25-51-9 W4"},{"id":173,"name":"Vermillion","lease":"AFRRCS","lat":53.33517,"lon":-110.798639,"legal":"NW 22-50-6 W4"},{"id":174,"name":"Lavoy","lease":"AFRRCS","lat":53.462044,"lon":-111.819178,"legal":"NW 2-52-13 W4"},{"id":175,"name":"Holden","lease":"Colo","lat":53.24203,"lon":-112.2688,"legal":"SW-22-49-16-W4M"},{"id":176,"name":"Camrose","lease":"Colo","lat":53.02783,"lon":-112.877667,"legal":"NW 04-47-20 4M"},{"id":177,"name":"Kingman","lease":"AFRRCS","lat":53.27688,"lon":-112.783111,"legal":"NE 36-49-20 W4"},{"id":178,"name":"Mundare","lease":"Colo","lat":53.5989,"lon":-112.4578,"legal":"NW 21-53-17-W4"},{"id":179,"name":"Lamont","lease":"AFRRCS","lat":53.89198,"lon":-112.753639,"legal":"SE 4-57-19 W4"},{"id":180,"name":"Hairy Hill","lease":"Colo","lat":53.87858,"lon":-112.008056,"legal":"SW 34-56-14 W4"},{"id":181,"name":"Vegreville","lease":"ColoColo","lat":53.49522,"lon":-112.053519,"legal":"5013 - 51 Ave."},{"id":182,"name":"Clandonald","lease":"Colo","lat":53.57628,"lon":-110.696111,"legal":"SE 17-53-05 W4"},{"id":183,"name":"Kitscoty","lease":"Colo","lat":53.3515,"lon":-110.3725,"legal":"SE 33-50-03-W4M"},{"id":184,"name":"Paradise Valley","lease":"Colo","lat":53.09919,"lon":-110.165417,"legal":"NW 36-47-02 W4"},{"id":186,"name":"Lloydminster","lease":"ColoColo","lat":53.28314,"lon":-110.006911,"legal":"SE 1-50-1 W4"},{"id":187,"name":"Tulliby Lake","lease":"AFRRCS","lat":53.71458,"lon":-110.180222,"legal":"NE 35-54-2 W4"},{"id":188,"name":"Two Hills","lease":"Colo","lat":53.72731,"lon":-111.593556,"legal":"NE 5-55-12 W4"},{"id":191,"name":"Viking","lease":"Colo","lat":53.06187,"lon":-111.786381,"legal":"SE 23-47-13 W4"},{"id":192,"name":"Edmonton","lease":"ColoColo","lat":53.30708,"lon":-113.585567,"legal":"SE 10-50-25 W4M"},{"id":194,"name":"Wetaskiwin","lease":"Colo","lat":52.9882,"lon":-113.3284,"legal":"NE 19-46-23 W4"},{"id":195,"name":"Leduc","lease":"AFRRCS","lat":53.22834,"lon":-113.513614,"legal":"SE 13-49-25 W4"},{"id":196,"name":"Devon","lease":"Colo","lat":53.32965,"lon":-113.724383,"legal":"SE 22-50-26 W4"},{"id":197,"name":"Warburg","lease":"AFRRCS","lat":53.16131,"lon":-114.297083,"legal":"NE 24-48-3 W5"},{"id":198,"name":"Winfield","lease":"Colo","lat":52.96564,"lon":-114.386944,"legal":"SW 16-46-3 W5"},{"id":199,"name":"Alder Flats","lease":"Colo","lat":52.90836,"lon":-114.893917,"legal":"SW  25-45-7 W5"},{"id":200,"name":"Lodgepole","lease":"Colo","lat":53.18556,"lon":-115.320833,"legal":"NE 36 48 10 W5"},{"id":201,"name":"Drayton Valley","lease":"Colo","lat":53.21297,"lon":-114.971944,"legal":"SW-9-49-7-W5"},{"id":202,"name":"Tomahawk","lease":"Colo","lat":53.38183,"lon":-114.759944,"legal":"SW 12 51 6 W5"},{"id":203,"name":"Villeneuve","lease":"Colo","lat":53.64369,"lon":-114.003722,"legal":"SE 12-54-01 W5"},{"id":204,"name":"Bell Tower","lease":"ColoColo","lat":53.545,"lon":-113.494167,"legal":"10104 - 103 Ave."},{"id":205,"name":"Pigeon Lake","lease":"Colo","lat":52.93028,"lon":-113.853333,"legal":"NE 33-45-27 W4"},{"id":206,"name":"Wabamun","lease":"Colo","lat":53.58411,"lon":-114.42105,"legal":"NE 18-53-03 W5"},{"id":207,"name":"Lewis Farms","lease":"Colo","lat":53.53075,"lon":-113.663722,"legal":"SW 32-52-25 W4"},{"id":208,"name":"Strathcona","lease":"Colo","lat":53.47025,"lon":-113.474028,"legal":"SE 9-52-24 W4"},{"id":209,"name":"Redwater","lease":"Colo","lat":53.97581,"lon":-113.170889,"legal":"NW 35-57-22-W4"},{"id":210,"name":"Fort Saskatchewan","lease":"ColoColo","lat":53.71696,"lon":-113.257628,"legal":"SE 06-55-22-W4M"},{"id":211,"name":"Sherwood Park","lease":"Colo","lat":53.52697,"lon":-113.342389,"legal":"SW 33-52-23 W4M"},{"id":212,"name":"St Albert","lease":"Colo","lat":53.65927,"lon":-113.674869,"legal":"SE 18-54-25 W4"},{"id":213,"name":"Legal","lease":"AFRRCS","lat":53.92058,"lon":-113.626361,"legal":"SE 15-57-25 W4"},{"id":214,"name":"Evergreen","lease":"Colo","lat":53.63136,"lon":-113.393278,"legal":"17051 34 St."},{"id":218,"name":"Gibbons","lease":"AFRRCS","lat":53.83097,"lon":-113.326778,"legal":"NE 10-56-23 W4"},{"id":224,"name":"Alexander","lease":"ColoColo","lat":53.8047,"lon":-113.916011,"legal":"SE 2-56-27 W4"},{"id":225,"name":"Frog Lake","lease":"Colo","lat":54.0945,"lon":-110.391028,"legal":"\tSE 16 59 3 W4"},{"id":226,"name":"St Paul","lease":"AFRRCS","lat":53.99286,"lon":-111.228333,"legal":"SE 11-58-09-W4M"},{"id":227,"name":"Ashmont","lease":"Colo","lat":54.16634,"lon":-111.601444,"legal":"SW 09-60-11 W4"},{"id":228,"name":"Cold Lake","lease":"Colo","lat":54.57458,"lon":-110.385072,"legal":"SE-33-64-3-W4"},{"id":229,"name":"Grande Centre","lease":"Colo","lat":54.38708,"lon":-110.201722,"legal":"SW 26-62-2 W4"},{"id":230,"name":"Whitefish","lease":"Colo","lat":54.41217,"lon":-111.753583,"legal":"NE 32-62-12 W4"},{"id":231,"name":"Smoky Lake","lease":"Colo","lat":54.21031,"lon":-112.622333,"legal":"SW 27-60-18 W4"},{"id":232,"name":"Lac La Biche","lease":"Colo","lat":54.78014,"lon":-111.928428,"legal":"SW 9-67-13 W4"},{"id":233,"name":"Heart Lake","lease":"ColoColo","lat":54.91523,"lon":-111.339817,"legal":"NW 29-68-9 W4"},{"id":234,"name":"May Tower","lease":"Colo","lat":55.537,"lon":-112.266222,"legal":"SE 33-75-15-W4M"},{"id":235,"name":"Pinehurst","lease":"Colo","lat":54.48685,"lon":-111.384144,"legal":"SW 36-63-10 W4"},{"id":236,"name":"Marianna Lake","lease":"Colo","lat":55.88597,"lon":-112.120944,"legal":"SE 33-79-14 W4"},{"id":237,"name":"Moose Hills","lease":"Colo","lat":53.99794,"lon":-110.820361,"legal":"SW 10-58-6 W4"},{"id":238,"name":"Goodfish","lease":"ColoColo","lat":56.74239,"lon":-114.820361,"legal":"SW 25-89-6 W5"},{"id":239,"name":"Wiau Lake","lease":"AFRRCS","lat":55.3391,"lon":-111.263276,"legal":"NE 23-73-9 W4"},{"id":240,"name":"Ardmore","lease":"Colo","lat":54.29242,"lon":-110.484417,"legal":"NE 23-61-4 W4"},{"id":244,"name":"Bonnyville","lease":"Colo","lat":54.28028,"lon":-110.728944,"legal":"NW 17-61-05 W4"},{"id":245,"name":"Boyle","lease":"Colo","lat":54.52008,"lon":-112.809056,"legal":"SE 9-64-19 W4"},{"id":246,"name":"Rochester","lease":"Colo","lat":54.37094,"lon":-113.435944,"legal":"SE 19-62-23 W4"},{"id":247,"name":"Fort Assiniboine","lease":"Colo","lat":54.39143,"lon":-114.903139,"legal":"SE 25-62-7 W5"},{"id":248,"name":"Carson Creek","lease":"Colo","lat":54.40535,"lon":-115.649611,"legal":"SW 31-62-11 W5"},{"id":249,"name":"Mayerthorpe","lease":"ColoColo","lat":53.939142,"lon":-115.140182,"legal":"SW 21-57-8 W5"},{"id":250,"name":"Atmore","lease":"AFRRCS","lat":54.80258,"lon":-112.549111,"legal":"NE 17-67-17-W4"},{"id":251,"name":"Thorhild","lease":"AFRRCS","lat":54.1615,"lon":-113.112917,"legal":"NE 5-60-21 W4"},{"id":252,"name":"Ross Haven","lease":"ColoColo","lat":53.74597,"lon":-114.392306,"legal":"SW 16-55-3 W5"},{"id":253,"name":"Westlock","lease":"Colo","lat":54.13689,"lon":-113.856389,"legal":"NE-29-59-26-W4"},{"id":254,"name":"Whitecourt Mtn","lease":"Colo","lat":54.03244,"lon":-115.721028,"legal":"NW 21-58-12 W5"},{"id":256,"name":"Athabasca","lease":"Colo","lat":54.73383,"lon":-113.298361,"legal":"NW 20-66-22-W4"},{"id":258,"name":"Barrhead","lease":"Colo","lat":54.12231,"lon":-114.46555,"legal":"NW 24-59-4 W5"},{"id":259,"name":"Neerlandia","lease":"ColoColo","lat":54.31733,"lon":-114.3696,"legal":"SW 34-61-3 W5"},{"id":263,"name":"BeaverHill","lease":"ColoColo","lat":54.76923,"lon":-111.959158,"legal":"SW 5-67-13 W4"},{"id":264,"name":"Wandering River","lease":"Colo","lat":55.197968,"lon":-112.430696,"legal":"NW 32-71-16 W4"},{"id":265,"name":"Whitecourt","lease":"Colo","lat":54.13111,"lon":-115.654417,"legal":"NE 25-59-12 W5"},{"id":266,"name":"Lombell","lease":"Colo","lat":54.07875,"lon":-115.362056,"legal":"NE 01-59-10-W5"},{"id":267,"name":"Caslan","lease":"AFRRCS","lat":54.63628,"lon":-112.507778,"legal":"SE 21-65-17 W4"},{"id":268,"name":"Evansburg","lease":"Colo","lat":53.70803,"lon":-115.080972,"legal":"SW 35-54-8 W5"},{"id":269,"name":"Carrot Creek","lease":"Colo","lat":53.56908,"lon":-115.855417,"legal":"NE 09-53-13 W5"},{"id":270,"name":"Obed Mtn Mine","lease":"ColoColo","lat":53.55297,"lon":-117.518872,"legal":"NE 16-53-24 W5"},{"id":271,"name":"Athabasca Mtn","lease":"ColoColo","lat":53.40875,"lon":-117.787139,"legal":"NE 17-51-26 W5"},{"id":272,"name":"Berland","lease":"Colo","lat":53.66583,"lon":-118.167972,"legal":"NW 13-54-2 W6"},{"id":273,"name":"Wolf Creek","lease":"Colo","lat":53.60875,"lon":-116.238583,"legal":"NE 26-53-16 W5"},{"id":274,"name":"Marlboro","lease":"Colo","lat":53.57308,"lon":-116.722028,"legal":"SW-15-53-19-W5"},{"id":275,"name":"Hanlan Petrocan","lease":"Colo","lat":53.20769,"lon":-116.814881,"legal":"SE 11-49-20 W5"},{"id":276,"name":"Yellowhead","lease":"ColoColo","lat":53.23642,"lon":-117.141433,"legal":"SW 22-49-22 W5"},{"id":277,"name":"Cadomin","lease":"ColoColo","lat":52.98814,"lon":-117.277944,"legal":"SW 21-45-21 W5"},{"id":278,"name":"Edson","lease":"Colo","lat":53.59861,"lon":-116.461167,"legal":"NE 20-53-17 W5"},{"id":282,"name":"Whistler Mtn","lease":"ColoColo","lat":52.83544,"lon":-118.126417,"legal":"SE 31-44-1 W6"},{"id":283,"name":"Banff","lease":"AFRRCS","lat":51.17272,"lon":-115.555972,"legal":"SW 36-25-12 W5"},{"id":284,"name":"Tangle Ridge","lease":"ColoColo","lat":52.29833,"lon":-117.286944,"legal":"SW 29-39-24 W5"},{"id":285,"name":"Mt Wilson","lease":"ColoColo","lat":52.01738,"lon":-116.802419,"legal":"SW 21-35-20 W5"},{"id":286,"name":"Mt Hector","lease":"ColoColo","lat":51.57437,"lon":-116.260058,"legal":"NE 13-30-17 W5"},{"id":287,"name":"Mt Bourgeau","lease":"ColoColo","lat":51.13194,"lon":-115.774444,"legal":"SE 17-25-13 W5"},{"id":288,"name":"Mt Indefatigable","lease":"ColoColo","lat":50.64642,"lon":-115.166444,"legal":"SW 21-20-8 W5"},{"id":289,"name":"Mt Butte","lease":"AFRRCS","lat":49.64922,"lon":-114.485333,"legal":"NE 16-8-4 W5"},{"id":290,"name":"Cameron","lease":"ColoColo","lat":50.29031,"lon":-114.524278,"legal":"SW 33-15-5 W5"},{"id":291,"name":"Hailstone Butte","lease":"ColoColo","lat":50.20878,"lon":-114.457778,"legal":"SE 6-15-4 W5"},{"id":292,"name":"Porcupine Hills","lease":"Colo","lat":49.88622,"lon":-114.004833,"legal":"NE 1-11-1 W5"},{"id":293,"name":"Mt Kidd","lease":"ColoColo","lat":50.89353,"lon":-115.189583,"legal":"SE 28-22-9 W5"},{"id":294,"name":"Lake Louise Resort","lease":"ColoColo","lat":51.4538,"lon":-116.1255,"legal":"NW 1-29-16 W5"},{"id":295,"name":"Grotto Mtn","lease":"ColoColo","lat":51.08617,"lon":-115.265972,"legal":"SW 9-24-9 W5"},{"id":296,"name":"Tent Ridge","lease":"ColoColo","lat":50.82186,"lon":-115.362611,"legal":"SE 12-23-10 W5"},{"id":297,"name":"Thunder Mtn","lease":"ColoColo","lat":49.83914,"lon":-114.357389,"legal":"NW 21-10-3 W5"},{"id":298,"name":"Canmore","lease":"AFRRCS","lat":51.08364,"lon":-115.378833,"legal":"SE 31-24-10 W5"},{"id":299,"name":"Castle Junction","lease":"ColoColo","lat":51.2608,"lon":-115.905502,"legal":"SE 33-26-14 W5"},{"id":300,"name":"Exshaw","lease":"Colo","lat":51.06103,"lon":-115.151333,"legal":"NE 23-24-9 W5"},{"id":302,"name":"William Watson Lodge","lease":"ColoColo","lat":50.663,"lon":-115.125194,"legal":"NW 33-21-9 W5"},{"id":305,"name":"Kananaskis","lease":"ColoColo","lat":50.92864,"lon":-115.125194,"legal":"SE 2-23-9 W5"},{"id":306,"name":"Lake Louise","lease":"ColoColo","lat":51.43678,"lon":-116.187083,"legal":"SE 33-28-16 W5"},{"id":307,"name":"Bellevue","lease":"Colo","lat":49.57453,"lon":-114.377472,"legal":"SW 20-7-3 W5"},{"id":309,"name":"Conklin","lease":"Colo","lat":55.62092,"lon":-111.176694,"legal":"SE-33-76-8-W4"},{"id":310,"name":"Stony Mtn","lease":"Colo","lat":56.38594,"lon":-111.272806,"legal":"NE 24-85-09-W4M"},{"id":311,"name":"Algar","lease":"Colo","lat":56.10311,"lon":-111.821611,"legal":"SW 16-82-12 W4"},{"id":312,"name":"Mildred Lake","lease":"Colo","lat":57.04594,"lon":-111.578139,"legal":"NW 5 93 10 W4"},{"id":313,"name":"Engstrom Lake","lease":"Colo","lat":56.19472,"lon":-110.975833,"legal":"SW 13-83-7 W4"},{"id":314,"name":"Martin Ridge","lease":"Colo","lat":56.73172,"lon":-111.475056,"legal":"SE 23-89-10-W4"},{"id":315,"name":"Waterways","lease":"Colo","lat":56.68534,"lon":-111.328675,"legal":"SW 02-89-09-W4"},{"id":316,"name":"Fort Mackay","lease":"Colo","lat":57.10408,"lon":-111.618667,"legal":"NE 25-93-11 W4"},{"id":317,"name":"Fort Mcmurray","lease":"ColoColo","lat":56.71633,"lon":-111.362778,"legal":"SE 16-89-9 W4"},{"id":320,"name":"Fort Chipewyan","lease":"ColoColo","lat":58.72331,"lon":-111.153417,"legal":"SW 17-112-7 W4"},{"id":321,"name":"Janvier","lease":"AFRRCS","lat":55.90408,"lon":-110.744333,"legal":"SE 5-80-5 W4"},{"id":322,"name":"Birch Mt","lease":"ColoColo","lat":57.695945,"lon":-111.831737,"legal":"NW 24-100-12-W4"},{"id":323,"name":"Fort Smith","lease":"ColoColo","lat":59.96958,"lon":-111.819222,"legal":"SE-27-126-11 W4"},{"id":324,"name":"Chipewyan Lake","lease":"ColoColo","lat":56.93917,"lon":-113.484169,"legal":"NW 33-91-22 W4"},{"id":325,"name":"Red Earth","lease":"ColoColo","lat":56.54583,"lon":-115.252917,"legal":"NE 18-87-8 W5"},{"id":326,"name":"Nipisi","lease":"Colo","lat":55.90686,"lon":-115.152278,"legal":"NE 3-80-8 W5"},{"id":327,"name":"Gift Lake","lease":"Colo","lat":55.86425,"lon":-115.762361,"legal":"NE 23-79-12 W5"},{"id":328,"name":"Little Buffalo","lease":"ColoColo","lat":56.45611,"lon":-116.120833,"legal":"SE 15-86-14 W5"},{"id":329,"name":"Grouard","lease":"Colo","lat":55.54111,"lon":-116.120556,"legal":"SE 32-75-14 W5"},{"id":330,"name":"Winagami","lease":"AFRRCS","lat":55.6075,"lon":-116.612778,"legal":"SW 29-76-17 W5"},{"id":331,"name":"Clear Hills","lease":"ColoColo","lat":56.59719,"lon":-119.406361,"legal":"SW 5-88-9 W6"},{"id":332,"name":"Swan Hills","lease":"Colo","lat":54.74614,"lon":-115.410083,"legal":"NW 26-66-10 W5"},{"id":333,"name":"House Mtn","lease":"Colo","lat":55.04805,"lon":-115.595133,"legal":"NW 10-70-11 W5"},{"id":334,"name":"Flatbush","lease":"Colo","lat":54.67481,"lon":-114.05375,"legal":"NE 34-65-01 W5"},{"id":335,"name":"Marten Mtn","lease":"ColoColo","lat":55.4719,"lon":-114.7862,"legal":"NE 1-75-6 W5"},{"id":336,"name":"Weberville","lease":"Colo","lat":56.38556,"lon":-117.3445,"legal":"SW 24-85-22 W5"},{"id":337,"name":"Deadwood","lease":"AFRRCS","lat":56.76942,"lon":-117.669667,"legal":"NW 31-89-23 W5"},{"id":338,"name":"Hotchkiss","lease":"ColoColo","lat":57.0585,"lon":-117.5694,"legal":"NW 12-93-23 W5"},{"id":339,"name":"Keg River","lease":"Colo","lat":57.78727,"lon":-117.620839,"legal":"NE 24-101-23 W5M"},{"id":340,"name":"Boyer River","lease":"Colo","lat":58.20628,"lon":-117.23715,"legal":"NE 16-106-20 W5"},{"id":341,"name":"Watt Mtn","lease":"Colo","lat":58.64769,"lon":-117.510139,"legal":"SW 20-111-21-W5"},{"id":342,"name":"Meander River","lease":"ColoColo","lat":59.1375,"lon":-117.629,"legal":"NE 2-117-22 W5"},{"id":343,"name":"Steen River","lease":"ColoColo","lat":59.4826,"lon":-117.188083,"legal":"NW 3-121-19 W5"},{"id":344,"name":"Wabasca","lease":"Colo","lat":56.01869,"lon":-113.870667,"legal":"SE 17-81-25 W4"},{"id":345,"name":"Sandy Lake","lease":"ColoColo","lat":55.80586,"lon":-113.433472,"legal":"NE 36-78-23 W4"},{"id":346,"name":"Lubicon","lease":"Colo","lat":56.18986,"lon":-115.354194,"legal":"SE 16-83-9 W5"},{"id":347,"name":"Simon Lakes","lease":"Colo","lat":56.48381,"lon":-116.687056,"legal":"SW 30-86-17 W5"},{"id":348,"name":"Slims Creek","lease":"Colo","lat":57.34119,"lon":-117.532528,"legal":"SE 20-96-22 W5"},{"id":349,"name":"High Level","lease":"Colo","lat":58.49353,"lon":-117.121028,"legal":"NW 28-109-19 W5"},{"id":350,"name":"Indian Cabins","lease":"ColoColo","lat":59.91619,"lon":-117.034417,"legal":"SE 3-126-18 W5"},{"id":351,"name":"Hines Creek","lease":"Colo","lat":56.30422,"lon":-118.596528,"legal":"NW 20-84-4 W6"},{"id":352,"name":"Calling Lake","lease":"Colo","lat":55.12172,"lon":-113.240611,"legal":"NE 1-71-22-W4"},{"id":353,"name":"Panny River","lease":"Colo","lat":57.30081,"lon":-114.863083,"legal":"SW 2-96-6 W5"},{"id":354,"name":"Jean Dor Prairie","lease":"ColoColo","lat":58.50237,"lon":-115.135031,"legal":"NE 30-109-7 W5"},{"id":355,"name":"Rainbow Lake","lease":"Colo","lat":58.50047,"lon":-119.279889,"legal":"SW 33-109-08 W6"},{"id":356,"name":"Zama City","lease":"ColoColo","lat":59.26886,"lon":-118.688556,"legal":"NE 24-118-5 W6"},{"id":357,"name":"Buffalo Creek","lease":"ColoColo","lat":56.52861,"lon":-113.470278,"legal":"SE 8-87-22 W4"},{"id":358,"name":"Adair","lease":"ColoColo","lat":59.16056,"lon":-118.328889,"legal":"SW 18-117-2 W6"},{"id":359,"name":"Whitemud","lease":"ColoColo","lat":56.42143,"lon":-118.002083,"legal":"NE 5-91-4 W6"},{"id":360,"name":"Otter Lakes","lease":"ColoColo","lat":56.69742,"lon":-115.923083,"legal":"SE 12-89-13 W5"},{"id":361,"name":"Ponton","lease":"ColoColo","lat":58.93189,"lon":-116.221028,"legal":"NW 25-114-14 W5"},{"id":362,"name":"Talbot Lake","lease":"ColoColo","lat":57.34908,"lon":-115.657389,"legal":"NE 23-96-11 W5"},{"id":363,"name":"Teepee Lake","lease":"ColoColo","lat":56.45861,"lon":-114.118889,"legal":"NE 17-86-1 W5"},{"id":364,"name":"Bassett","lease":"ColoColo","lat":58.195,"lon":-118.219111,"legal":"SW 14-106-2 W6"},{"id":365,"name":"Chinchaga","lease":"ColoColo","lat":57.11722,"lon":-118.334361,"legal":"NE 36-93-3 W6"},{"id":366,"name":"Fontas","lease":"ColoColo","lat":57.78028,"lon":-119.501417,"legal":"NW 24-101-10 W6"},{"id":368,"name":"Kinuso","lease":"Colo","lat":55.32098,"lon":-115.390139,"legal":"SE 13-73-10 W5"},{"id":370,"name":"Fort Vermilion","lease":"Colo","lat":58.382585,"lon":-116.10915,"legal":"NE 13-108-13 W5"},{"id":375,"name":"La Crete","lease":"ColoColo","lat":58.17981,"lon":-116.372194,"legal":"NW 2-106-15 W5"},{"id":377,"name":"Manning","lease":"Colo","lat":56.92219,"lon":-117.627833,"legal":"SE 28-91-23 W5"},{"id":381,"name":"Slave Lake","lease":"ColoColo","lat":55.33592,"lon":-114.739694,"legal":"SW 20-73-5 W5"},{"id":382,"name":"Smith","lease":"ColoColo","lat":55.1859,"lon":-114.048197,"legal":"SW 35-71-1 W5"},{"id":384,"name":"Tall Cree","lease":"ColoColo","lat":57.91258,"lon":-115.357611,"legal":"NE 02-103-9 W5"},{"id":389,"name":"Chateh","lease":"Colo","lat":58.64019,"lon":-118.674778,"legal":"NE 18-111-04  W6"},{"id":390,"name":"Two Creeks","lease":"Colo","lat":54.30252,"lon":-116.287839,"legal":"SE 26-61-16 W5"},{"id":391,"name":"Fox Creek","lease":"Colo","lat":54.37761,"lon":-116.867531,"legal":"SW 24-62-20 W5"},{"id":392,"name":"Little Smoky","lease":"Colo","lat":54.67716,"lon":-117.093383,"legal":"SW 3-66-21 W5"},{"id":393,"name":"Valleyview","lease":"AFRRCS","lat":55.03447,"lon":-117.332611,"legal":"NE 6-70-22 W5"},{"id":394,"name":"Grande Cache","lease":"ColoColo","lat":53.89082,"lon":-119.105119,"legal":"SW 3-57-8 W6"},{"id":395,"name":"Muskeg","lease":"ColoColo","lat":54.00383,"lon":-118.618892,"legal":"NW 12-58-5 W6"},{"id":396,"name":"Smoky River","lease":"Colo","lat":54.32248,"lon":-118.355911,"legal":"NE 34-61-3 W6"},{"id":397,"name":"Debolt","lease":"ColoColo","lat":55.29308,"lon":-117.905833,"legal":"SE 3-73-26 W5"},{"id":398,"name":"Wapiti","lease":"AFRRCS","lat":54.96761,"lon":-119.106,"legal":"SE 14-69-8 W6"},{"id":399,"name":"Sulphur Ridge","lease":"ColoColo","lat":54.15017,"lon":-119.738167,"legal":"SE 32-60-13 W6"},{"id":401,"name":"Bald Mtn","lease":"ColoColo","lat":54.81306,"lon":-118.915,"legal":"SW 19-67-6 W6"},{"id":403,"name":"Grande Mountain","lease":"ColoColo","lat":53.93069,"lon":-119.110956,"legal":"NW 15-57-8 W6"},{"id":405,"name":"Demmitt","lease":"Colo","lat":55.46338,"lon":-119.879603,"legal":"SW 1-75-13 W6"},{"id":406,"name":"Saddle Hills","lease":"ColoColo","lat":55.48908,"lon":-118.748306,"legal":"NW 8-75-5 W6"},{"id":407,"name":"Bezanson","lease":"ColoColo","lat":55.24211,"lon":-118.561956,"legal":"NW 16-72-4 W6"},{"id":408,"name":"Codesa","lease":"ColoColo","lat":55.66638,"lon":-118.079117,"legal":"SE 16-77-1 W6"},{"id":409,"name":"Greene Valley","lease":"AFRRCS","lat":56.13011,"lon":-117.319444,"legal":"NE 23-82-22 W5"},{"id":410,"name":"Fairview","lease":"Colo","lat":56.10078,"lon":-118.405833,"legal":"NW 09-82-03 W6"},{"id":411,"name":"Spirit River","lease":"Colo","lat":55.76619,"lon":-118.855861,"legal":"NE 16-78-6 W6"},{"id":412,"name":"Falher","lease":"ColoColo","lat":55.75125,"lon":-117.200167,"legal":"NW 09-78-21 W5"},{"id":413,"name":"Brownvale","lease":"Colo","lat":56.07154,"lon":-117.888483,"legal":"NW 32-81-25 W5"},{"id":415,"name":"Grande Prairie","lease":"ColoColo","lat":55.17043,"lon":-118.800869,"legal":"NE 23-71-6 W6"},{"id":418,"name":"Beaverlodge","lease":"Colo","lat":55.21331,"lon":-119.429,"legal":"NW 2-72-10 W6"},{"id":419,"name":"Peace River","lease":"Colo","lat":56.23231,"lon":-117.318083,"legal":"NW 30-83-21 W5"},{"id":420,"name":"Saskatoon Mountain","lease":"Colo","lat":55.22039,"lon":-119.283278,"legal":"SE 10-72-9 W6"},{"id":421,"name":"Silver Valley","lease":"ColoColo","lat":56.0451,"lon":-119.420167,"legal":"SE 25-81-10 W6"},{"id":422,"name":"Wanham","lease":"Colo","lat":55.73731,"lon":-118.389194,"legal":"NE 4-78-3 W6"},{"id":423,"name":"Bonanza","lease":"ColoColo","lat":55.91371,"lon":-119.847603,"legal":"SW 8-80-12 W6"},{"id":null,"name":"17878 Warehouse","lease":null},{"id":null,"name":"RISK","lease":null},{"id":null,"name":"Low 0-1 incidents","lease":null},{"id":null,"name":"Mod 2-4 incidents","lease":null},{"id":null,"name":"High 5+ incidents","lease":null}];
+
+const YES_NO = ["Yes","No"];
+const YES_NO_NA = ["Yes","No","N/A"];
+
+const STEPS = [
+  { title:"Site Identification", fields:[
+    { key:"Site Name", label:"Site", type:"site" },
+    { key:"Assessment Date", label:"Assessment Date", type:"date", default:"today" },
+    { key:"Assessed By", label:"Assessed By", type:"text" },
+    { key:"Risk Level", label:"Risk Level", type:"choice", options:["Low","Moderate","High"] },
+    { key:"Municipality", label:"Municipality", type:"text" },
+    { key:"Legal Land Description", label:"Legal Land Description", type:"text" },
+    { key:"__gps__", label:"Coordinates", type:"gps" },
+  ]},
+  { title:"Door Security", fields:[
+    { key:"Deadbolt Count", label:"Deadbolt Count", type:"choice", options:["0","1","2","3+"] },
+    { key:"Astragal Installed", label:"Astragal Installed", type:"choice", options:YES_NO },
+    { key:"Electronic Keypad", label:"Electronic Keypad", type:"choice", options:YES_NO },
+    { key:"Last Known Code", label:"Last Known Code", type:"text" },
+    { key:"Knob / Lever", label:"Knob / Lever", type:"choice", options:["Knob","Lever","N/A"] },
+    { key:"Door Sensor", label:"Door Sensor", type:"choice", options:YES_NO_NA },
+    { key:"Key Type", label:"Key Type", type:"choice", options:["Standard","New / Rekeyed","Restricted"] },
+  ]},
+  { title:"Gate & Fencing", fields:[
+    { key:"Gate Type", label:"Gate Type", type:"choice", options:["Chain link swing","Vehicle + walk-through","N/A - no gate"] },
+    { key:"Gate Lock", label:"Gate Lock", type:"choice", options:["Padlock","Electronic","None"] },
+    { key:"Fence Type", label:"Fence Type", type:"choice", options:["Chain link","Chain link w/ barbwire","N/A - no fence"] },
+    { key:"Fence Condition", label:"Fence Condition", type:"choice", options:["Good","Fair","Poor / Breach Noted"] },
+    { key:"Fence Breach / Damage Noted", label:"Fence Breach / Damage Noted", type:"choice", options:YES_NO },
+  ]},
+  { title:"Surveillance & Cameras", fields:[
+    { key:"Camera Present", label:"Camera Present", type:"choice", options:YES_NO },
+    { key:"# Outdoor Cameras", label:"# Outdoor Cameras", type:"number" },
+    { key:"# Indoor Cameras", label:"# Indoor Cameras", type:"number" },
+    { key:"Interior Camera OK", label:"Interior Camera OK", type:"choice", options:YES_NO_NA },
+    { key:"Exterior Camera OK", label:"Exterior Camera OK", type:"choice", options:YES_NO_NA },
+    { key:"NVR OK", label:"NVR OK", type:"choice", options:YES_NO_NA },
+    { key:"Hard Drive Healthy", label:"Hard Drive Healthy", type:"choice", options:YES_NO_NA },
+    { key:"Retention Date (on-site back to)", label:"Retention Date (on-site back to)", type:"date" },
+    { key:"NVR Time Synced", label:"NVR Time Synced", type:"choice", options:YES_NO_NA },
+    { key:"Camera / Equip Damage Noted", label:"Camera / Equip Damage Noted", type:"choice", options:YES_NO },
+    { key:"Security Signage Posted", label:"Security Signage Posted", type:"choice", options:YES_NO },
+    { key:"Stakeholder Camera", label:"Stakeholder Camera", type:"choice", options:["No","Yes - Telus","Yes - Rogers","Yes - Atco Gas","Yes - Other"] },
+    { key:"Connectivity", label:"Connectivity", type:"choice", options:["No","Starlink","Router / Modem"] },
+  ]},
+  { title:"Grounding & Access", fields:[
+    { key:"Above Grade Grounding Type", label:"Above Grade Grounding Type", type:"choice", options:["Copper","Tinned Copper","Copper Clad","N/A"] },
+    { key:"Grounding Tampered / Stolen", label:"Grounding Tampered / Stolen", type:"choice", options:YES_NO },
+    { key:"Access Requirement", label:"Access Requirement", type:"choice", options:["Keys @ SCC","Key Fence","Telus Key","Telus Key & Card","Key Fence / Card Bldg","Other"] },
+  ]},
+  { title:"Condition & Incidents", fields:[
+    { key:"Overall Site Condition", label:"Overall Site Condition", type:"choice", options:["Functioning as Designed","Minor Deficiency","Major Deficiency"] },
+    { key:"Deficiencies Noted", label:"Deficiencies Noted", type:"choice", options:YES_NO },
+    { key:"Previous Incidents (past 12 mo)", label:"Previous Incidents (past 12 mo)", type:"number" },
+    { key:"Last Incident Ref # / Date", label:"Last Incident Ref # / Date", type:"text" },
+  ]},
+  { title:"Recommendations", fields:[
+    { key:"Rec: Astragal", label:"Astragal", type:"choice", options:YES_NO },
+    { key:"Rec: Additional Deadbolt(s)", label:"Additional Deadbolt(s)", type:"choice", options:YES_NO },
+    { key:"Rec: Camera Upgrade", label:"Camera Upgrade", type:"choice", options:YES_NO },
+    { key:"Rec: Lighting", label:"Lighting", type:"choice", options:YES_NO },
+    { key:"Rec: Signage", label:"Signage", type:"choice", options:YES_NO },
+    { key:"Rec: NVR / Connectivity", label:"NVR / Connectivity", type:"choice", options:YES_NO },
+    { key:"Estimated Cost of Recs ($)", label:"Estimated Cost of Recs ($)", type:"number" },
+  ]},
+  { title:"Sign-off & Notes", fields:[
+    { key:"Submitted By", label:"Submitted By", type:"text" },
+    { key:"Notes", label:"Notes", type:"textarea" },
+  ]},
+  { title:"Review & Finish", fields:[] },
+];
+
+/* ============================================================
+   Storage: IndexedDB, with an in-memory fallback if it's unavailable
+   (some mobile browsers restrict IndexedDB for files opened directly,
+   e.g. file:// pages -- rather than fail silently, this app still works
+   in that case, it just won't remember drafts between app restarts).
+   ============================================================ */
+let db;
+let usingMemoryFallback = false;
+let memoryStore = [];
+
+function openDB(){
+  return new Promise((resolve)=>{
+    if(typeof indexedDB === "undefined"){
+      usingMemoryFallback = true;
+      resolve(null);
+      return;
+    }
+    try{
+      const req = indexedDB.open("afrrcs_assessments", 1);
+      req.onupgradeneeded = e=>{
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains("drafts")){
+          d.createObjectStore("drafts",{keyPath:"id"});
+        }
+      };
+      req.onsuccess = e=>{ db = e.target.result; resolve(db); };
+      req.onerror = ()=>{ usingMemoryFallback = true; resolve(null); };
+    }catch(err){
+      usingMemoryFallback = true;
+      resolve(null);
+    }
+  });
+}
+function dbPut(record){
+  if(usingMemoryFallback){
+    memoryStore = memoryStore.filter(r=>r.id !== record.id);
+    memoryStore.push(JSON.parse(JSON.stringify(record)));
+    return Promise.resolve();
+  }
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction("drafts","readwrite");
+    tx.objectStore("drafts").put(record);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=e=>reject(e);
+  });
+}
+function dbDelete(id){
+  if(usingMemoryFallback){
+    memoryStore = memoryStore.filter(r=>r.id !== id);
+    return Promise.resolve();
+  }
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction("drafts","readwrite");
+    tx.objectStore("drafts").delete(id);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=e=>reject(e);
+  });
+}
+function dbGetAll(){
+  if(usingMemoryFallback){
+    return Promise.resolve(memoryStore.slice());
+  }
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction("drafts","readonly");
+    const req = tx.objectStore("drafts").getAll();
+    req.onsuccess=()=>resolve(req.result || []);
+    req.onerror=e=>reject(e);
+  });
+}
+
+/* ============================================================
+   App state
+   ============================================================ */
+let current = null;     // the in-progress draft record
+let stepIndex = 0;
+let saveTimer = null;
+
+function uuid(){
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0, v = c=="x"?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function newDraft(){
+  return {
+    id: uuid(),
+    status: "draft",
+    updatedAt: Date.now(),
+    data: { "Assessment Date": todayISO() },
+  };
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    current.updatedAt = Date.now();
+    dbPut(current);
+  }, 400);
+}
+
+/* ============================================================
+   Rendering: HOME screen
+   ============================================================ */
+const main = document.getElementById("main");
+const topTitle = document.getElementById("topTitle");
+const btnBack = document.getElementById("btnBack");
+const progressWrap = document.getElementById("progressWrap");
+const navbar = document.getElementById("navbar");
+
+function fmtDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
+}
+
+async function renderHome(){
+  topTitle.textContent = "AFRRCS Site Assessments";
+  btnBack.classList.add("hidden");
+  progressWrap.classList.add("hidden");
+  navbar.classList.add("hidden");
+
+  const drafts = (await dbGetAll()).sort((a,b)=>b.updatedAt-a.updatedAt);
+
+  const fallbackWarning = usingMemoryFallback ? `
+    <div class="fallback-warning" style="background:#FFF1CC;border:1px solid #E0B000;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+      <div style="font-weight:700;font-size:13px;">This device/browser is blocking this app's normal storage.</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">You can still fill out and send assessments, but anything in progress will be lost if you close this app or your browser -- finish and send each assessment in one sitting to be safe.</div>
+    </div>` : "";
+
+  let html = `
+    <div class="home-hero">
+      <h2>Field Security Checklist</h2>
+      <p>Works fully offline. Fill out a checklist at any site, then send the saved file back to the office to add it to the master log.</p>
+    </div>
+    ${fallbackWarning}
+    <button class="btn btn-primary" id="btnNew">+ New Assessment</button>
+    <div class="section-label">Saved on this device</div>
+  `;
+
+  if(drafts.length === 0){
+    html += `<div class="empty-note">Nothing saved yet. Start a new assessment above.</div>`;
+  } else {
+    for(const d of drafts){
+      const site = d.data["Site Name"] || "(no site chosen yet)";
+      const badge = d.status === "completed"
+        ? `<span class="badge badge-done">Sent</span>`
+        : `<span class="badge badge-draft">In progress</span>`;
+      html += `
+        <div class="draft-card" data-id="${d.id}">
+          <div class="row">
+            <div>
+              <div class="site">${escapeHtml(site)}</div>
+              <div class="meta">${d.data["Assessment Date"] || ""} &middot; updated ${fmtDate(d.updatedAt)}</div>
+            </div>
+            ${badge}
+          </div>
+          <div class="actions">
+            <button class="act-open">${d.status==="completed" ? "View / Re-send" : "Continue"}</button>
+            <button class="act-delete">Delete</button>
+          </div>
+        </div>`;
+    }
+  }
+  main.innerHTML = html;
+
+  document.getElementById("btnNew").onclick = ()=>{
+    current = newDraft();
+    stepIndex = 0;
+    dbPut(current).then(renderStep);
+  };
+  main.querySelectorAll(".draft-card").forEach(card=>{
+    const id = card.dataset.id;
+    const draft = drafts.find(x=>x.id===id);
+    card.querySelector(".act-open").onclick = ()=>{
+      current = draft;
+      stepIndex = draft.status === "completed" ? STEPS.length-1 : 0;
+      renderStep();
+    };
+    card.querySelector(".act-delete").onclick = async ()=>{
+      if(confirm(`Delete the assessment for "${draft.data["Site Name"]||"this site"}"? This can't be undone.`)){
+        await dbDelete(id);
+        renderHome();
+      }
+    };
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ============================================================
+   Rendering: WIZARD steps
+   ============================================================ */
+function renderProgress(){
+  progressWrap.classList.remove("hidden");
+  const bars = document.getElementById("progressBars");
+  bars.innerHTML = STEPS.map((s,i)=>{
+    let cls = "seg";
+    if(i < stepIndex) cls += " done";
+    if(i === stepIndex) cls += " current";
+    return `<div class="${cls}"></div>`;
+  }).join("");
+  document.getElementById("progressLabel").textContent =
+    `Step ${stepIndex+1} of ${STEPS.length} — ${STEPS[stepIndex].title}`;
+}
+
+function fieldValue(key){
+  return current.data[key] !== undefined ? current.data[key] : "";
+}
+function setFieldValue(key, val){
+  current.data[key] = val;
+  scheduleSave();
+}
+
+// When a site is chosen, pull in whatever we already know about it (from the
+// AFRRCS towers register) so the field crew doesn't have to retype it --
+// same idea as the site auto-fill in the Incident Report app.
+function applySiteDefaults(siteName){
+  const site = SITES.find(s=>s.name === siteName);
+  if(!site) return;
+  if(site.lat !== undefined) setFieldValue("Latitude", site.lat.toFixed(6));
+  if(site.lon !== undefined) setFieldValue("Longitude", site.lon.toFixed(6));
+  if(site.legal) setFieldValue("Legal Land Description", site.legal);
+}
+
+function renderStep(){
+  topTitle.textContent = current.data["Site Name"] || "New Assessment";
+  btnBack.classList.remove("hidden");
+  renderProgress();
+  navbar.classList.remove("hidden");
+
+  const step = STEPS[stepIndex];
+  const isReview = step.title === "Review & Finish";
+
+  let html = `<div class="card"><h2>${step.title}</h2>`;
+  if(isReview){
+    html += renderReview();
+  } else {
+    for(const f of step.fields){
+      html += renderField(f);
+    }
+  }
+  html += `</div>`;
+  main.innerHTML = html;
+  wireFieldEvents(step);
+
+  const navBackBtn = document.getElementById("navBackBtn");
+  const navNextBtn = document.getElementById("navNextBtn");
+  navBackBtn.textContent = "Back";
+  navBackBtn.disabled = false;
+  navBackBtn.onclick = ()=>{
+    if(stepIndex === 0){ current=null; renderHome(); }
+    else { stepIndex--; renderStep(); }
+  };
+  btnBack.onclick = navBackBtn.onclick;
+
+  if(isReview){
+    navNextBtn.textContent = "Save & Send File";
+    navNextBtn.className = "nav-finish";
+    navNextBtn.onclick = finishAssessment;
+  } else {
+    navNextBtn.textContent = stepIndex === STEPS.length-2 ? "Review" : "Next";
+    navNextBtn.className = "nav-next";
+    navNextBtn.onclick = ()=>{
+      if(stepIndex === 0 && !current.data["Site Name"]){
+        toast("Please choose a site before continuing.");
+        return;
+      }
+      stepIndex++; renderStep();
+    };
+  }
+}
+
+function renderField(f){
+  const val = fieldValue(f.key);
+  switch(f.type){
+    case "site": return renderSiteField(f);
+    case "gps": return renderGpsField();
+    case "text": {
+      let hint = "";
+      if(f.key === "Legal Land Description"){
+        const site = SITES.find(s=>s.name === current.data["Site Name"]);
+        if(site && site.legal) hint = `<div class="hint">Auto-filled from the site register &mdash; edit if this visit found it different.</div>`;
+      }
+      return `
+      <div class="field"><label>${f.label}</label>
+        <input type="text" data-key="${f.key}" value="${escapeHtml(val)}">${hint}</div>`;
+    }
+    case "textarea": return `
+      <div class="field"><label>${f.label}</label>
+        <textarea data-key="${f.key}">${escapeHtml(val)}</textarea></div>`;
+    case "number": return `
+      <div class="field"><label>${f.label}</label>
+        <input type="number" inputmode="decimal" data-key="${f.key}" value="${escapeHtml(val)}"></div>`;
+    case "date": return `
+      <div class="field"><label>${f.label}</label>
+        <input type="date" data-key="${f.key}" value="${escapeHtml(val)}"></div>`;
+    case "choice": return `
+      <div class="field"><label>${f.label}</label>
+        <div class="choice-group" data-key="${f.key}">
+          ${f.options.map(o=>{
+            let extra = "";
+            if(o==="Yes") extra=" yes"; if(o==="No") extra=" no";
+            return `<button type="button" class="choice-btn${val===o?" sel"+extra:""}" data-val="${escapeHtml(o)}">${o}</button>`;
+          }).join("")}
+        </div></div>`;
+    default: return "";
+  }
+}
+
+function renderSiteField(f){
+  const chosen = current.data["Site Name"];
+  if(chosen){
+    return `
+      <div class="field">
+        <label>${f.label}</label>
+        <div class="site-selected">
+          <span class="name">${escapeHtml(chosen)}</span>
+          <button type="button" id="btnChangeSite">Change</button>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="field site-search">
+      <label>${f.label}</label>
+      <input type="text" id="siteSearchInput" placeholder="Type to search all AFRRCS sites…" autocomplete="off">
+      <div class="site-results" id="siteResults"></div>
+    </div>`;
+}
+
+function renderGpsField(){
+  const lat = fieldValue("Latitude");
+  const lon = fieldValue("Longitude");
+  const site = SITES.find(s=>s.name === current.data["Site Name"]);
+  const fromRegister = site && site.lat !== undefined &&
+    lat === site.lat.toFixed(6) && lon === site.lon.toFixed(6);
+  return `
+    <div class="field">
+      <label>Coordinates</label>
+      <div class="gps-row">
+        <input type="text" inputmode="decimal" data-key="Latitude" placeholder="Latitude" value="${escapeHtml(lat)}">
+        <input type="text" inputmode="decimal" data-key="Longitude" placeholder="Longitude" value="${escapeHtml(lon)}">
+      </div>
+      <div class="gps-row">
+        <button type="button" class="gps-btn" id="btnGps" style="flex:1">Use My Location</button>
+      </div>
+      ${fromRegister ? '<div class="hint">From the site register. Tap "Use My Location" if this visit shows it\'s moved.</div>' : ""}
+      <div class="gps-status" id="gpsStatus"></div>
+    </div>`;
+}
+
+function renderReview(){
+  let html = "";
+  for(const step of STEPS){
+    if(step.title === "Review & Finish") continue;
+    if(step.fields.length === 0) continue;
+    html += `<div class="review-group"><h3>${step.title}</h3>`;
+    for(const f of step.fields){
+      const v = current.data[f.key];
+      if(v === undefined || v === "") continue;
+      html += `<div class="review-row"><span class="k">${f.label}</span><span class="v">${escapeHtml(v)}</span></div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="field"><div class="hint">Tapping "Save & Send File" saves a file on this device with everything above. Send that file to the office (email, Teams, etc.) to add this visit to the master spreadsheet. Take photos separately with your regular camera and add them to the spreadsheet afterward.</div></div>`;
+  return html;
+}
+
+function wireFieldEvents(step){
+  main.querySelectorAll("input[data-key], textarea[data-key]").forEach(el=>{
+    el.addEventListener("input", ()=> setFieldValue(el.dataset.key, el.value));
+  });
+
+  main.querySelectorAll(".choice-group").forEach(group=>{
+    const key = group.dataset.key;
+    group.querySelectorAll(".choice-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        setFieldValue(key, btn.dataset.val);
+        group.querySelectorAll(".choice-btn").forEach(b=>b.classList.remove("sel","yes","no"));
+        btn.classList.add("sel");
+        if(btn.dataset.val==="Yes") btn.classList.add("yes");
+        if(btn.dataset.val==="No") btn.classList.add("no");
+      });
+    });
+  });
+
+  // Site search
+  const siteInput = document.getElementById("siteSearchInput");
+  if(siteInput){
+    const resultsEl = document.getElementById("siteResults");
+    const showResults = (q)=>{
+      const query = q.trim().toLowerCase();
+      const matches = query.length===0 ? [] :
+        SITES.filter(s=>s.name.toLowerCase().includes(query)).slice(0,25);
+      resultsEl.innerHTML = matches.map(s=>
+        `<div class="site-result" data-name="${escapeHtml(s.name)}">${escapeHtml(s.name)}</div>`
+      ).join("");
+      resultsEl.querySelectorAll(".site-result").forEach(r=>{
+        r.addEventListener("click", ()=>{
+          setFieldValue("Site Name", r.dataset.name);
+          applySiteDefaults(r.dataset.name);
+          renderStep();
+        });
+      });
+    };
+    siteInput.addEventListener("input", ()=> showResults(siteInput.value));
+    siteInput.focus();
+  }
+  const changeSiteBtn = document.getElementById("btnChangeSite");
+  if(changeSiteBtn){
+    changeSiteBtn.addEventListener("click", ()=>{
+      setFieldValue("Site Name", "");
+      renderStep();
+    });
+  }
+
+  // GPS
+  const gpsBtn = document.getElementById("btnGps");
+  if(gpsBtn){
+    gpsBtn.addEventListener("click", captureGps);
+  }
+}
+
+/* ---- GPS capture (two-stage fallback) ---- */
+function captureGps(){
+  const statusEl = document.getElementById("gpsStatus");
+  if(!("geolocation" in navigator)){
+    statusEl.textContent = "Location isn't available in this browser.";
+    return;
+  }
+  statusEl.textContent = "Finding your location (high accuracy)…";
+  const applyPosition = (pos)=>{
+    const lat = pos.coords.latitude.toFixed(6);
+    const lon = pos.coords.longitude.toFixed(6);
+    setFieldValue("Latitude", lat);
+    setFieldValue("Longitude", lon);
+    document.querySelector('input[data-key="Latitude"]').value = lat;
+    document.querySelector('input[data-key="Longitude"]').value = lon;
+    statusEl.textContent = `Location set (±${Math.round(pos.coords.accuracy)}m).`;
+  };
+  navigator.geolocation.getCurrentPosition(
+    applyPosition,
+    ()=>{
+      statusEl.textContent = "Retrying with a lower-accuracy fix…";
+      navigator.geolocation.getCurrentPosition(
+        applyPosition,
+        (err)=>{
+          statusEl.textContent = "Couldn't get your location automatically — type the coordinates in manually. " +
+            "(If this file was opened directly instead of from a saved home-screen shortcut, some browsers block location for security reasons.)";
+        },
+        { enableHighAccuracy:false, timeout:20000, maximumAge:60000 }
+      );
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+  );
+}
+
+/* ---- Finish: build + download the .afrrcs file ---- */
+async function finishAssessment(){
+  const record = Object.assign({}, current.data);
+
+  const site = (current.data["Site Name"] || "Site").replace(/[^a-z0-9]+/gi,"_");
+  const date = current.data["Assessment Date"] || todayISO();
+  const filename = `${site}_${date}.afrrcs`;
+
+  const blob = new Blob([JSON.stringify(record)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+
+  current.status = "completed";
+  current.updatedAt = Date.now();
+  await dbPut(current);
+
+  renderDone(filename);
+}
+
+function renderDone(filename){
+  topTitle.textContent = "Saved";
+  btnBack.classList.add("hidden");
+  progressWrap.classList.add("hidden");
+  navbar.classList.add("hidden");
+  main.innerHTML = `
+    <div class="done-wrap">
+      <div class="check">&#10003;</div>
+      <h2>Assessment saved</h2>
+      <p>Saved as <strong>${escapeHtml(filename)}</strong> on this device.<br>
+      Send that file to the office (email, Teams, text, etc.) so it can be added to the master spreadsheet.</p>
+      <button class="btn btn-primary" id="btnHome">Done</button>
+    </div>`;
+  document.getElementById("btnHome").onclick = ()=>{ current=null; renderHome(); };
+}
+
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2200);
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+openDB().then(renderHome).catch(err=>{
+  // Last-resort safety net: even if something unexpected still goes wrong,
+  // show an error instead of leaving the screen blank under the header.
+  main.innerHTML = `<div class="empty-note">Something went wrong starting the app. Try closing and reopening it.<br><br>` +
+    `(Technical detail: ${escapeHtml(String(err && err.message || err))})</div>`;
+});
+</script>
+</body>
+</html>
