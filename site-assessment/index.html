@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -134,6 +134,25 @@
   .done-wrap h2{margin:0 0 8px;}
   .done-wrap p{color:var(--muted);font-size:14px;margin-bottom:24px;}
 </style>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:Closure_x0020_Criteria_x0020_Met msdt:dt="string">1</mso:Closure_x0020_Criteria_x0020_Met>
+<mso:e14f78495b6d4881b0a4f259bbfaac0a msdt:dt="string"></mso:e14f78495b6d4881b0a4f259bbfaac0a>
+<mso:Function_x0020_GoA msdt:dt="string"></mso:Function_x0020_GoA>
+<mso:MediaServiceImageTags msdt:dt="string"></mso:MediaServiceImageTags>
+<mso:Closure_x0020_Criteria_x0020_Met msdt:dt="string">1;#No|7a3957b4-6333-4b3f-aca5-11043f0480fb</mso:Closure_x0020_Criteria_x0020_Met>
+<mso:e4e1391327164fcf9b36427592ef5372 msdt:dt="string"></mso:e4e1391327164fcf9b36427592ef5372>
+<mso:iec6cfa028bf4e91bd7258a6733aefa5 msdt:dt="string"></mso:iec6cfa028bf4e91bd7258a6733aefa5>
+<mso:h5c22b25fd914590af6f7504dd8d5e82 msdt:dt="string">No|7a3957b4-6333-4b3f-aca5-11043f0480fb</mso:h5c22b25fd914590af6f7504dd8d5e82>
+<mso:Status_x0020_GoA msdt:dt="string"></mso:Status_x0020_GoA>
+<mso:b10e50595339447db3b0d16aff0e3d79 msdt:dt="string"></mso:b10e50595339447db3b0d16aff0e3d79>
+<mso:Organization_x0020_GoA msdt:dt="string"></mso:Organization_x0020_GoA>
+<mso:lcf76f155ced4ddcb4097134ff3c332f msdt:dt="string"></mso:lcf76f155ced4ddcb4097134ff3c332f>
+<mso:TaxCatchAll msdt:dt="string">1;#No|7a3957b4-6333-4b3f-aca5-11043f0480fb</mso:TaxCatchAll>
+<mso:Document_x0020_Type_x0020_GoA msdt:dt="string"></mso:Document_x0020_Type_x0020_GoA>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
 </head>
 <body>
 <div id="app">
@@ -704,26 +723,59 @@ function captureGps(){
   );
 }
 
-/* ---- Finish: build + download the .afrrcs file ---- */
+/* ---- Finish: prepare the file, then let the person choose how to send it ---- */
+let pendingBlob = null;
+let pendingFilename = null;
+
 async function finishAssessment(){
   const record = Object.assign({}, current.data);
 
   const site = (current.data["Site Name"] || "Site").replace(/[^a-z0-9]+/gi,"_");
   const date = current.data["Assessment Date"] || todayISO();
-  const filename = `${site}_${date}.afrrcs`;
-
-  const blob = new Blob([JSON.stringify(record)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  pendingFilename = `${site}_${date}.afrrcs`;
+  pendingBlob = new Blob([JSON.stringify(record)], {type:"application/json"});
 
   current.status = "completed";
   current.updatedAt = Date.now();
   await dbPut(current);
 
-  renderDone(filename);
+  renderDone(pendingFilename);
+}
+
+function canUseShareSheet(blob, filename){
+  if(!navigator.share || !navigator.canShare) return false;
+  try{
+    const file = new File([blob], filename, {type:"application/json"});
+    return navigator.canShare({files:[file]});
+  }catch(err){
+    return false;
+  }
+}
+
+async function shareFile(){
+  try{
+    const file = new File([pendingBlob], pendingFilename, {type:"application/json"});
+    await navigator.share({
+      files:[file],
+      title:"AFRRCS Site Assessment",
+      text:`Assessment for ${current && current.data["Site Name"] || "site"}`,
+    });
+    toast("Sent.");
+  }catch(err){
+    // AbortError just means the person cancelled the share sheet -- not a real error.
+    if(err && err.name !== "AbortError"){
+      toast("Couldn't open the share sheet -- try Save to Device instead.");
+    }
+  }
+}
+
+function saveFileToDevice(){
+  const url = URL.createObjectURL(pendingBlob);
+  const a = document.createElement("a");
+  a.href = url; a.download = pendingFilename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  toast("Saved to this device.");
 }
 
 function renderDone(filename){
@@ -731,15 +783,34 @@ function renderDone(filename){
   btnBack.classList.add("hidden");
   progressWrap.classList.add("hidden");
   navbar.classList.add("hidden");
+
+  const shareAvailable = canUseShareSheet(pendingBlob, filename);
+
+  const shareButton = shareAvailable
+    ? `<button class="btn btn-primary" id="btnShare">Send via Email / Teams / etc.</button>`
+    : "";
+  const saveButton = `<button class="btn ${shareAvailable ? "btn-secondary" : "btn-primary"}" id="btnSaveDevice">Save to Device</button>`;
+  const hint = shareAvailable
+    ? `Sending goes straight to Mail, Teams, Messages, or whatever you pick &mdash; no need to hunt for it in Files afterward.`
+    : `This browser doesn't support direct sharing, so save the file, then attach it manually in an email or Teams message.`;
+
   main.innerHTML = `
     <div class="done-wrap">
       <div class="check">&#10003;</div>
-      <h2>Assessment saved</h2>
-      <p>Saved as <strong>${escapeHtml(filename)}</strong> on this device.<br>
-      Send that file to the office (email, Teams, text, etc.) so it can be added to the master spreadsheet.</p>
-      <button class="btn btn-primary" id="btnHome">Done</button>
+      <h2>Assessment ready</h2>
+      <p><strong>${escapeHtml(filename)}</strong><br>${hint}</p>
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:280px;margin:0 auto 18px;">
+        ${shareButton}
+        ${saveButton}
+      </div>
+      <button class="btn btn-ghost" id="btnHome">Done</button>
     </div>`;
-  document.getElementById("btnHome").onclick = ()=>{ current=null; renderHome(); };
+
+  if(shareAvailable){
+    document.getElementById("btnShare").onclick = shareFile;
+  }
+  document.getElementById("btnSaveDevice").onclick = saveFileToDevice;
+  document.getElementById("btnHome").onclick = ()=>{ current=null; pendingBlob=null; pendingFilename=null; renderHome(); };
 }
 
 function toast(msg){
