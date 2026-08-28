@@ -162,7 +162,6 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 
 <!--[if gte mso 9]><xml>
 <mso:CustomDocumentProperties>
-<mso:Closure_x0020_Criteria_x0020_Met msdt:dt="string">1;#No|7a3957b4-6333-4b3f-aca5-11043f0480fb</mso:Closure_x0020_Criteria_x0020_Met>
 <mso:e14f78495b6d4881b0a4f259bbfaac0a msdt:dt="string"></mso:e14f78495b6d4881b0a4f259bbfaac0a>
 <mso:MediaServiceImageTags msdt:dt="string"></mso:MediaServiceImageTags>
 <mso:iec6cfa028bf4e91bd7258a6733aefa5 msdt:dt="string"></mso:iec6cfa028bf4e91bd7258a6733aefa5>
@@ -807,10 +806,10 @@ async function finishAssessment(){
 
   const site = (current.data["Site Name"] || "Site").replace(/[^a-z0-9]+/gi,"_");
   const date = current.data["Assessment Date"] || todayISO();
-  pendingFilename = `${site}_${date}.afrrcs`;
+  pendingFilename = `${site}_SiteSecurityAssessment_${date}.afrrcs`;
   pendingBlob = new Blob([JSON.stringify(record)], {type:"application/json"});
 
-  pendingReportFilename = `${site}_${date}_Report.docx`;
+  pendingReportFilename = `${site}_SiteSecurityAssessment_${date}_Report.docx`;
   try{
     pendingReportBlob = buildReportBlob(current.data);
   }catch(err){
